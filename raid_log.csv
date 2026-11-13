@@ -1,0 +1,15 @@
+id,type,title,workstream,owner,probability,impact,status,due,mitigation
+R01,Risk,Wave 1 go-live slips if UAT defects are not closed by Nov 6,Testing,QA Lead,4,5,Open,2026-11-06,Daily defect triage; add two testers from vendor
+R02,Risk,Provider adoption below 80% target at pilot sites,Adoption,Clinical Champion,3,4,Open,2026-12-18,Super-user coverage on every unit during hypercare
+R03,Risk,Interface volume exceeds vendor capacity at peak hours,Integration,Integration Architect,2,5,Open,2026-11-13,Load test at 2x peak; scale message queue
+R04,Risk,Budget overrun from extended vendor support,Governance,Program Manager,3,3,Open,2026-11-30,Change request for scope; renegotiate support rate
+R05,Risk,Training seats unfilled due to clinical staffing,Training,Training Lead,4,3,Open,2026-11-13,Add evening and e-learning sessions
+R06,Risk,Data migration mismatches in historical notes,Data,Data Lead,2,4,Closed,2026-08-14,Source-to-target reconciliation reached 99.7% match
+R07,Risk,Access role mapping errors expose PHI,Security,Security Officer,1,5,Open,2026-11-13,Role-based access audit before each wave
+A01,Assumption,Each pilot site releases 6 super-users for 3 weeks,Training,Site Directors,0,0,Validated,2026-09-30,
+A02,Assumption,No EHR upgrade freeze during Wave 2 window,Deployment,IT Change Board,0,0,Open,2026-12-15,
+I01,Issue,Speech-to-text accuracy below threshold in ED notes,Testing,Vendor PM,0,4,Open,2026-11-04,Vendor model update scheduled; retest in pilot ED
+I02,Issue,Two pilot sites missing test patient records,Testing,Data Lead,0,3,Resolved,2026-10-16,Test data loaded and verified
+I03,Issue,Steering committee approval for Wave 2 scope pending,Governance,Program Sponsor,0,3,Open,2026-11-20,Decision memo sent with three options
+D01,Dependency,EHR vendor interface certification,Integration,EHR Vendor,0,0,Complete,2026-06-26,
+D02,Dependency,Network upgrade at Wave 2 hospitals,Deployment,Infrastructure,0,0,On track,2026-12-18,

@@ -1,0 +1,331 @@
+<title>Project Beacon Program Health</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a PMO steering-committee status page. Status header, health strip, schedule timeline, cost curve beside risk heatmap, RAID log. */
+:root {
+  --page: #f5f5f3;
+  --surface: #fcfcfb;
+  --ink: #16181d;
+  --ink-2: #50545c;
+  --muted: #858a92;
+  --hair: #e1e2e0;
+  --axis: #c4c6c4;
+  --accent: #2b3a67;
+  --accent-soft: #e6e9f2;
+  --s1: #2a78d6; --s2: #eb6834;
+  --plan: #cfd8e6;
+  --good: #0ca30c; --warn: #fab219; --serious: #ec835a; --crit: #d03b3b;
+  --good-bg: #e6f4e6; --warn-bg: #fdf3dc; --crit-bg: #fbe7e7; --neutral-bg: #eeeeec;
+  --heat-0: #f0efec; --heat-1: #fdf3dc; --heat-2: #fbe2c8; --heat-3: #f6c4b4; --heat-4: #eb9d95;
+  --font-ui: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --page: #0e0f12; --surface: #17191d; --ink: #eef0f3; --ink-2: #bcc0c7; --muted: #8a8f97;
+    --hair: #282b31; --axis: #3b3f46; --accent: #9fb0e6; --accent-soft: #232b45;
+    --s1: #3987e5; --s2: #d95926; --plan: #2d3a52;
+    --good-bg: #12301a; --warn-bg: #3a2e0e; --crit-bg: #3a1a1a; --neutral-bg: #25272c;
+    --heat-0: #222428; --heat-1: #3a3312; --heat-2: #4a3318; --heat-3: #5a2a22; --heat-4: #702b2b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --page: #0e0f12; --surface: #17191d; --ink: #eef0f3; --ink-2: #bcc0c7; --muted: #8a8f97;
+  --hair: #282b31; --axis: #3b3f46; --accent: #9fb0e6; --accent-soft: #232b45;
+  --s1: #3987e5; --s2: #d95926; --plan: #2d3a52;
+  --good-bg: #12301a; --warn-bg: #3a2e0e; --crit-bg: #3a1a1a; --neutral-bg: #25272c;
+  --heat-0: #222428; --heat-1: #3a3312; --heat-2: #4a3318; --heat-3: #5a2a22; --heat-4: #702b2b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--page); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.5; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-block: 28px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 20px; }
+header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+h1 { font-size: clamp(22px, 3.2vw, 30px); margin: 2px 0 4px; letter-spacing: -.01em; text-wrap: balance; }
+.sub { color: var(--ink-2); margin: 0; max-width: 66ch; }
+.meta { display: grid; gap: 6px; justify-items: end; }
+.badge { font-family: var(--font-data); font-size: 12px; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.overall { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.rag { width: 12px; height: 12px; border-radius: 50%; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--hair); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.kpi .lbl { font-size: 12px; color: var(--ink-2); }
+.kpi .val { font-size: 28px; font-weight: 700; letter-spacing: -.02em; }
+.kpi .val small { font-size: 14px; font-weight: 500; color: var(--ink-2); margin-left: 3px; }
+.kpi .det { font-family: var(--font-data); font-size: 12px; color: var(--muted); }
+.pill { font-family: var(--font-ui); display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 8px; width: fit-content; color: var(--ink); white-space: nowrap; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+.pill.good { background: var(--good-bg); } .pill.good::before { background: var(--good); }
+.pill.amber { background: var(--warn-bg); } .pill.amber::before { background: var(--warn); }
+.pill.red { background: var(--crit-bg); } .pill.red::before { background: var(--crit); }
+.pill.neutral { background: var(--neutral-bg); }
+.panel { background: var(--surface); border: 1px solid var(--hair); border-radius: 10px; padding: 16px; min-width: 0; position: relative; }
+.panel h2 { font-size: 15px; margin: 0; }
+.note { color: var(--ink-2); font-size: 12px; margin: 2px 0 10px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 14px; height: 8px; border-radius: 2px; }
+.legend i.line { height: 3px; }
+.legend i.dash { height: 0; border-top: 2px dashed var(--s2); background: none; }
+.legend i.today { width: 0; height: 12px; border-left: 2px solid var(--crit); border-radius: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: inherit; font-size: 12px; border: 1px solid var(--hair); background: var(--surface); color: var(--ink-2); border-radius: 999px; padding: 4px 11px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); font-weight: 600; }
+.chip:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+label.fl { display: inline-flex; gap: 8px; align-items: center; color: var(--ink-2); font-size: 13px; }
+select { font: inherit; padding: 5px 9px; border-radius: 8px; border: 1px solid var(--hair); background: var(--surface); color: var(--ink); }
+.scroll { overflow-x: auto; }
+svg { display: block; overflow: visible; }
+svg text { font-family: var(--font-ui); font-size: 11px; fill: var(--muted); }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.heat { display: grid; grid-template-columns: 22px repeat(5, minmax(0, 1fr)); grid-template-rows: repeat(5, minmax(46px, auto)) 22px; gap: 3px; }
+.heat .cell { border-radius: 6px; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 4px; padding: 4px; font-family: var(--font-data); font-size: 11px; }
+.heat .cell b { background: var(--surface); color: var(--ink); border-radius: 4px; padding: 1px 5px; font-weight: 500; border: 1px solid var(--hair); cursor: default; }
+.heat .ax { font-size: 11px; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.heatwrap { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 4px; align-items: center; }
+.vlabel { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 11px; color: var(--ink-2); text-align: center; }
+.hlabel { text-align: center; font-size: 11px; color: var(--ink-2); margin-top: 4px; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--surface); border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.45; box-shadow: 0 6px 18px rgba(0,0,0,.18); z-index: 5; max-width: 300px; }
+.tip .row { display: flex; gap: 10px; justify-content: space-between; white-space: nowrap; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 820px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--hair); vertical-align: top; }
+th { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+td.mono, th.mono { font-family: var(--font-data); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.title { min-width: 260px; }
+td .mit { color: var(--ink-2); font-size: 12px; margin-top: 2px; }
+.score { display: inline-block; min-width: 26px; text-align: center; border-radius: 4px; padding: 1px 4px; font-family: var(--font-data); }
+.method { color: var(--ink-2); font-size: 12.5px; display: grid; gap: 6px; max-width: 90ch; }
+.method h2 { font-size: 13px; color: var(--ink); margin: 0; }
+.method p { margin: 0; }
+footer { color: var(--muted); font-size: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Steering committee status report</div>
+      <h1>Project Beacon: Clinical Documentation Rollout</h1>
+      <p class="sub">An AI clinical documentation platform rolling out to 10 hospitals in two waves. Schedule, cost, and RAID status as of October 31, 2026.</p>
+    </div>
+    <div class="meta">
+      <span class="overall" id="overall"></span>
+      <span class="badge">Synthetic data · portfolio project</span>
+    </div>
+  </header>
+
+  <section class="kpis" id="kpis" aria-label="Program health"></section>
+
+  <section class="panel" id="ganttPanel">
+    <div class="toolbar">
+      <div>
+        <h2>Milestone schedule</h2>
+        <p class="note" style="margin-bottom:0">Planned dates against current forecast. Critical-path milestones drive the go-live date.</p>
+      </div>
+      <label class="fl" for="wsSel">Workstream
+        <select id="wsSel"><option value="All">All workstreams</option></select>
+      </label>
+    </div>
+    <div class="legend" style="margin-bottom:6px">
+      <span><i style="background:var(--plan)"></i>Planned</span>
+      <span><i style="background:var(--s1)"></i>Forecast</span>
+      <span><i style="background:var(--s2)"></i>Forecast, critical path</span>
+      <span><i class="today"></i>Status date</span>
+    </div>
+    <div class="scroll" id="gantt"></div>
+  </section>
+
+  <div class="grid2">
+    <section class="panel" id="costPanel">
+      <h2>Cumulative cost against budget</h2>
+      <p class="note">Thousands of dollars. Budget at completion $2.40M.</p>
+      <div class="legend" style="margin-bottom:6px">
+        <span><i class="line" style="background:var(--s1)"></i>Planned (baseline)</span>
+        <span><i class="line" style="background:var(--s2)"></i>Actual</span>
+        <span><i class="dash"></i>Forecast</span>
+      </div>
+      <div id="cost"></div>
+    </section>
+    <section class="panel">
+      <h2>Open risk heatmap</h2>
+      <p class="note">Probability × impact, 1 to 5. Score 12 or above needs a steering committee decision.</p>
+      <div class="heatwrap">
+        <div class="vlabel">Probability →</div>
+        <div><div class="heat" id="heat"></div><div class="hlabel">Impact →</div></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="toolbar">
+      <div>
+        <h2>RAID log</h2>
+        <p class="note" style="margin-bottom:0">Risks, assumptions, issues, and dependencies, with owners and next actions.</p>
+      </div>
+      <div class="chips" id="raidChips" role="group" aria-label="Filter RAID type"></div>
+    </div>
+    <div class="scroll"><table id="raid"></table></div>
+  </section>
+
+  <section class="method">
+    <h2>About this project</h2>
+    <p>Built by Kritika Kaushik as a portfolio project. Project Beacon is fictional and every figure is synthetic, generated by <code>scripts/generate_data.py</code>. The page applies standard PMO methods: a critical-path schedule, earned value management (SPI = EV ÷ PV, CPI = EV ÷ AC), estimate at completion, and a RAID log scored by probability × impact.</p>
+  </section>
+  <footer>Status date October 31, 2026 · Synthetic data, not a real program.</footer>
+</div>
+
+<script>
+const DATA = {"statusDate":"2026-10-31","milestones":[{"id":"M01","workstream":"Governance","milestone":"Program charter and steering committee approved","planned_start":"2026-01-05","planned_finish":"2026-01-30","forecast_finish":"2026-01-30","pct_complete":100,"critical_path":true,"depends_on":""},{"id":"M02","workstream":"Requirements","milestone":"Clinical workflow requirements signed off","planned_start":"2026-02-02","planned_finish":"2026-03-20","forecast_finish":"2026-03-27","pct_complete":100,"critical_path":true,"depends_on":"M01"},{"id":"M03","workstream":"Integration","milestone":"EHR interface build (HL7/FHIR)","planned_start":"2026-03-23","planned_finish":"2026-06-12","forecast_finish":"2026-06-26","pct_complete":100,"critical_path":true,"depends_on":"M02"},{"id":"M04","workstream":"Data","milestone":"Historical note migration and reconciliation","planned_start":"2026-04-06","planned_finish":"2026-07-31","forecast_finish":"2026-08-14","pct_complete":100,"critical_path":false,"depends_on":"M02"},{"id":"M05","workstream":"Security","milestone":"HIPAA risk assessment and access controls","planned_start":"2026-04-20","planned_finish":"2026-06-30","forecast_finish":"2026-06-30","pct_complete":100,"critical_path":false,"depends_on":"M02"},{"id":"M06","workstream":"Testing","milestone":"System and integration testing","planned_start":"2026-06-15","planned_finish":"2026-08-28","forecast_finish":"2026-09-18","pct_complete":100,"critical_path":true,"depends_on":"M03"},{"id":"M07","workstream":"Testing","milestone":"User acceptance testing (3 pilot sites)","planned_start":"2026-08-31","planned_finish":"2026-10-09","forecast_finish":"2026-10-30","pct_complete":90,"critical_path":true,"depends_on":"M06"},{"id":"M08","workstream":"Training","milestone":"Super-user and provider training","planned_start":"2026-09-14","planned_finish":"2026-11-13","forecast_finish":"2026-11-20","pct_complete":60,"critical_path":false,"depends_on":"M07"},{"id":"M09","workstream":"Deployment","milestone":"Wave 1 go-live (4 hospitals)","planned_start":"2026-11-16","planned_finish":"2026-11-20","forecast_finish":"2026-12-04","pct_complete":0,"critical_path":true,"depends_on":"M07"},{"id":"M10","workstream":"Deployment","milestone":"Wave 2 go-live (6 hospitals)","planned_start":"2027-01-11","planned_finish":"2027-01-22","forecast_finish":"2027-02-05","pct_complete":0,"critical_path":true,"depends_on":"M09"},{"id":"M11","workstream":"Adoption","milestone":"Hypercare and adoption tracking","planned_start":"2026-11-23","planned_finish":"2027-03-12","forecast_finish":"2027-03-26","pct_complete":0,"critical_path":false,"depends_on":"M09"}],"budget":[{"month":"2026-01","planned_k":60,"actual_k":58,"forecast_k":"","cum_planned_k":60,"cum_actual_k":58,"cum_forecast_k":58},{"month":"2026-02","planned_k":90,"actual_k":96,"forecast_k":"","cum_planned_k":150,"cum_actual_k":154,"cum_forecast_k":154},{"month":"2026-03","planned_k":120,"actual_k":131,"forecast_k":"","cum_planned_k":270,"cum_actual_k":285,"cum_forecast_k":285},{"month":"2026-04","planned_k":170,"actual_k":182,"forecast_k":"","cum_planned_k":440,"cum_actual_k":467,"cum_forecast_k":467},{"month":"2026-05","planned_k":190,"actual_k":205,"forecast_k":"","cum_planned_k":630,"cum_actual_k":672,"cum_forecast_k":672},{"month":"2026-06","planned_k":210,"actual_k":224,"forecast_k":"","cum_planned_k":840,"cum_actual_k":896,"cum_forecast_k":896},{"month":"2026-07","planned_k":200,"actual_k":214,"forecast_k":"","cum_planned_k":1040,"cum_actual_k":1110,"cum_forecast_k":1110},{"month":"2026-08","planned_k":190,"actual_k":201,"forecast_k":"","cum_planned_k":1230,"cum_actual_k":1311,"cum_forecast_k":1311},{"month":"2026-09","planned_k":180,"actual_k":196,"forecast_k":"","cum_planned_k":1410,"cum_actual_k":1507,"cum_forecast_k":1507},{"month":"2026-10","planned_k":200,"actual_k":214,"forecast_k":"","cum_planned_k":1610,"cum_actual_k":1721,"cum_forecast_k":1721},{"month":"2026-11","planned_k":230,"actual_k":"","forecast_k":240,"cum_planned_k":1840,"cum_actual_k":"","cum_forecast_k":1961},{"month":"2026-12","planned_k":180,"actual_k":"","forecast_k":205,"cum_planned_k":2020,"cum_actual_k":"","cum_forecast_k":2166},{"month":"2027-01","planned_k":170,"actual_k":"","forecast_k":185,"cum_planned_k":2190,"cum_actual_k":"","cum_forecast_k":2351},{"month":"2027-02","planned_k":120,"actual_k":"","forecast_k":140,"cum_planned_k":2310,"cum_actual_k":"","cum_forecast_k":2491},{"month":"2027-03","planned_k":90,"actual_k":"","forecast_k":105,"cum_planned_k":2400,"cum_actual_k":"","cum_forecast_k":2596}],"evm":{"pv_k":1610,"ev_k":1481,"ac_k":1721,"cpi":0.86,"spi":0.92,"bac_k":2400,"eac_k":2596},"raid":[{"id":"R01","type":"Risk","title":"Wave 1 go-live slips if UAT defects are not closed by Nov 6","workstream":"Testing","owner":"QA Lead","probability":4,"impact":5,"status":"Open","due":"2026-11-06","mitigation":"Daily defect triage; add two testers from vendor"},{"id":"R02","type":"Risk","title":"Provider adoption below 80% target at pilot sites","workstream":"Adoption","owner":"Clinical Champion","probability":3,"impact":4,"status":"Open","due":"2026-12-18","mitigation":"Super-user coverage on every unit during hypercare"},{"id":"R03","type":"Risk","title":"Interface volume exceeds vendor capacity at peak hours","workstream":"Integration","owner":"Integration Architect","probability":2,"impact":5,"status":"Open","due":"2026-11-13","mitigation":"Load test at 2x peak; scale message queue"},{"id":"R04","type":"Risk","title":"Budget overrun from extended vendor support","workstream":"Governance","owner":"Program Manager","probability":3,"impact":3,"status":"Open","due":"2026-11-30","mitigation":"Change request for scope; renegotiate support rate"},{"id":"R05","type":"Risk","title":"Training seats unfilled due to clinical staffing","workstream":"Training","owner":"Training Lead","probability":4,"impact":3,"status":"Open","due":"2026-11-13","mitigation":"Add evening and e-learning sessions"},{"id":"R06","type":"Risk","title":"Data migration mismatches in historical notes","workstream":"Data","owner":"Data Lead","probability":2,"impact":4,"status":"Closed","due":"2026-08-14","mitigation":"Source-to-target reconciliation reached 99.7% match"},{"id":"R07","type":"Risk","title":"Access role mapping errors expose PHI","workstream":"Security","owner":"Security Officer","probability":1,"impact":5,"status":"Open","due":"2026-11-13","mitigation":"Role-based access audit before each wave"},{"id":"A01","type":"Assumption","title":"Each pilot site releases 6 super-users for 3 weeks","workstream":"Training","owner":"Site Directors","probability":0,"impact":0,"status":"Validated","due":"2026-09-30","mitigation":""},{"id":"A02","type":"Assumption","title":"No EHR upgrade freeze during Wave 2 window","workstream":"Deployment","owner":"IT Change Board","probability":0,"impact":0,"status":"Open","due":"2026-12-15","mitigation":""},{"id":"I01","type":"Issue","title":"Speech-to-text accuracy below threshold in ED notes","workstream":"Testing","owner":"Vendor PM","probability":0,"impact":4,"status":"Open","due":"2026-11-04","mitigation":"Vendor model update scheduled; retest in pilot ED"},{"id":"I02","type":"Issue","title":"Two pilot sites missing test patient records","workstream":"Testing","owner":"Data Lead","probability":0,"impact":3,"status":"Resolved","due":"2026-10-16","mitigation":"Test data loaded and verified"},{"id":"I03","type":"Issue","title":"Steering committee approval for Wave 2 scope pending","workstream":"Governance","owner":"Program Sponsor","probability":0,"impact":3,"status":"Open","due":"2026-11-20","mitigation":"Decision memo sent with three options"},{"id":"D01","type":"Dependency","title":"EHR vendor interface certification","workstream":"Integration","owner":"EHR Vendor","probability":0,"impact":0,"status":"Complete","due":"2026-06-26","mitigation":""},{"id":"D02","type":"Dependency","title":"Network upgrade at Wave 2 hospitals","workstream":"Deployment","owner":"Infrastructure","probability":0,"impact":0,"status":"On track","due":"2026-12-18","mitigation":""}]};
+const STATUS = new Date(DATA.statusDate + "T12:00:00");
+const D = s => new Date(s + "T12:00:00");
+const fmtD = d => d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+const days = (a, b) => Math.round((b - a) / 864e5);
+const money = k => "$" + (k / 1000).toFixed(2) + "M";
+const state = { ws: "All", raidType: "All" };
+try { const s = JSON.parse(localStorage.getItem("beacon-filters") || "{}"); Object.assign(state, s); } catch (e) {}
+
+function tip(panel) { let t = panel.querySelector(".tip"); if (!t) { t = document.createElement("div"); t.className = "tip"; t.hidden = true; panel.appendChild(t); } return t; }
+function place(t, panel, ev) { const r = panel.getBoundingClientRect(); const x = ev.clientX - r.left, y = ev.clientY - r.top; t.hidden = false; const w = t.offsetWidth; let l = x + 14; if (l + w > panel.clientWidth - 8) l = x - w - 14; t.style.left = Math.max(8, l) + "px"; t.style.top = Math.max(8, y - 10) + "px"; }
+
+const ms = DATA.milestones, evm = DATA.evm;
+const openRisks = DATA.raid.filter(r => r.type === "Risk" && r.status === "Open");
+const highRisks = openRisks.filter(r => r.probability * r.impact >= 12);
+const openIssues = DATA.raid.filter(r => r.type === "Issue" && r.status === "Open");
+const golive = ms.find(m => m.id === "M09");
+const slip = days(D(golive.planned_finish), D(golive.forecast_finish));
+const done = ms.filter(m => m.pct_complete === 100).length;
+
+function rag(v, g, a) { return v >= g ? "good" : v >= a ? "amber" : "red"; }
+function renderHeader() {
+  const s = rag(evm.spi, .95, .9), c = rag(evm.cpi, .95, .9);
+  const overall = [s, c].includes("red") || highRisks.length >= 3 ? "red" : [s, c].includes("amber") || highRisks.length ? "amber" : "good";
+  const name = { good: "On track", amber: "At risk", red: "Off track" }[overall];
+  document.getElementById("overall").innerHTML = `<span class="pill ${overall}">Overall: ${name}</span>`;
+  const tiles = [
+    { l: "Schedule performance (SPI)", v: evm.spi.toFixed(2), d: `EV $${evm.ev_k}K ÷ PV $${evm.pv_k}K`, s: s, sl: s === "good" ? "On schedule" : "Behind schedule" },
+    { l: "Cost performance (CPI)", v: evm.cpi.toFixed(2), d: `EV $${evm.ev_k}K ÷ AC $${evm.ac_k}K`, s: c, sl: c === "good" ? "On budget" : "Over budget" },
+    { l: "Estimate at completion", v: money(evm.eac_k), d: `Budget ${money(evm.bac_k)} · +${Math.round(100 * (evm.eac_k / evm.bac_k - 1))}%`, s: evm.eac_k > evm.bac_k * 1.05 ? "red" : "amber", sl: `$${evm.eac_k - evm.bac_k}K over` },
+    { l: "Wave 1 go-live", v: D(golive.forecast_finish).toLocaleDateString("en-US", { month: "short", day: "numeric" }), d: `Baseline ${D(golive.planned_finish).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`, s: slip > 10 ? "red" : slip > 0 ? "amber" : "good", sl: slip > 0 ? `${slip}-day slip` : "On baseline" },
+    { l: "Milestones complete", v: `${done}<small>of ${ms.length}</small>`, d: `${ms.filter(m => m.pct_complete > 0 && m.pct_complete < 100).length} in progress`, s: "neutral", sl: "Tracking" },
+    { l: "High risks open", v: String(highRisks.length), d: `${openRisks.length} risks · ${openIssues.length} issues open`, s: highRisks.length ? "red" : "good", sl: highRisks.length ? "Decision needed" : "None" },
+  ];
+  document.getElementById("kpis").innerHTML = tiles.map(t => `<div class="kpi"><div class="lbl">${t.l}</div><div class="val">${t.v}</div><div class="det">${t.d}</div><span class="pill ${t.s}">${t.sl}</span></div>`).join("");
+}
+
+function renderGantt() {
+  const panel = document.getElementById("ganttPanel"), host = document.getElementById("gantt");
+  const rows = ms.filter(m => state.ws === "All" || m.workstream === state.ws);
+  const start = D("2026-01-01"), end = D("2027-04-01");
+  const narrow = host.clientWidth < 600, W = Math.max(narrow ? 620 : 720, host.clientWidth), L = narrow ? 160 : 270, R = 48, T = 26, rowH = 30, H = T + rows.length * rowH + 8;
+  const x = d => L + (d - start) / (end - start) * (W - L - R);
+  let g = "";
+  for (let d = new Date(start); d < end; d.setMonth(d.getMonth() + 1)) {
+    const xx = x(d); g += `<line x1="${xx}" x2="${xx}" y1="${T - 6}" y2="${H}" stroke="var(--hair)"/>`;
+    g += `<text x="${xx + 4}" y="${T - 10}">${d.toLocaleDateString("en-US", { month: "short" })}${d.getMonth() === 0 ? " ’" + String(d.getFullYear()).slice(2) : ""}</text>`;
+  }
+  rows.forEach((m, i) => {
+    const y = T + i * rowH, ps = D(m.planned_start), pf = D(m.planned_finish), ff = D(m.forecast_finish);
+    const late = days(pf, ff);
+    g += `<text x="0" y="${y + 13}" style="fill:var(--ink)">${m.id} ${(() => { const n = narrow ? 20 : 38; return m.milestone.length > n ? m.milestone.slice(0, n - 1) + "…" : m.milestone; })()}</text>`;
+    g += `<text x="0" y="${y + 25}" style="font-size:10px">${m.workstream}${m.critical_path ? " · critical path" : ""}</text>`;
+    g += `<rect x="${x(ps)}" y="${y + 4}" width="${Math.max(3, x(pf) - x(ps))}" height="8" rx="2" fill="var(--plan)"/>`;
+    const fc = m.critical_path ? "var(--s2)" : "var(--s1)";
+    const fw = Math.max(4, x(ff) - x(ps));
+    g += `<rect x="${x(ps)}" y="${y + 14}" width="${fw}" height="10" rx="3" fill="${fc}" opacity="${m.pct_complete === 100 ? .55 : 1}"/>`;
+    if (m.pct_complete > 0 && m.pct_complete < 100) g += `<rect x="${x(ps)}" y="${y + 14}" width="${fw * m.pct_complete / 100}" height="10" rx="3" fill="${fc}"/><rect x="${x(ps) + fw * m.pct_complete / 100}" y="${y + 14}" width="${fw * (1 - m.pct_complete / 100)}" height="10" rx="3" fill="${fc}" opacity=".4"/>`;
+    if (late > 0) g += `<text x="${x(ff) + 5}" y="${y + 23}" style="fill:var(--ink-2)">+${late}d</text>`;
+    g += `<rect class="gh" data-i="${i}" x="0" y="${y}" width="${W}" height="${rowH}" fill="transparent"/>`;
+  });
+  g += `<line x1="${x(STATUS)}" x2="${x(STATUS)}" y1="${T - 6}" y2="${H}" stroke="var(--crit)" stroke-width="2"/>`;
+  host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Milestone schedule, planned versus forecast">${g}</svg>`;
+  const t = tip(panel);
+  host.querySelectorAll(".gh").forEach(el => {
+    el.addEventListener("pointermove", ev => {
+      const m = rows[+el.dataset.i], late = days(D(m.planned_finish), D(m.forecast_finish));
+      t.innerHTML = `<b>${m.id} · ${m.milestone}</b><div class="row"><span>Baseline finish</span><b>${fmtD(D(m.planned_finish))}</b></div><div class="row"><span>Forecast finish</span><b>${fmtD(D(m.forecast_finish))}</b></div><div class="row"><span>Variance</span><b>${late > 0 ? "+" + late + " days" : "On baseline"}</b></div><div class="row"><span>Complete</span><b>${m.pct_complete}%</b></div>${m.depends_on ? `<div class="row"><span>Depends on</span><b>${m.depends_on}</b></div>` : ""}`;
+      place(t, panel, ev);
+    });
+    el.addEventListener("pointerleave", () => t.hidden = true);
+  });
+}
+
+function renderCost() {
+  const panel = document.getElementById("costPanel"), host = document.getElementById("cost"), B = DATA.budget;
+  const W = Math.max(320, host.clientWidth || 600), H = 280, L = 52, R = 64, T = 14, Bm = 28;
+  const max = 2800, x = i => L + i * (W - L - R) / (B.length - 1), y = v => T + (max - v) * (H - T - Bm) / max;
+  let g = "";
+  for (let v = 0; v <= max; v += 700) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--hair)"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">$${(v / 1000).toFixed(1)}M</text>`;
+  const every = W < 480 ? 4 : 2;
+  B.forEach((b, i) => { if (i % every === 0) g += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${D(b.month + "-15").toLocaleDateString("en-US", { month: "short" })} ’${b.month.slice(2, 4)}</text>`; });
+  const path = (pts) => pts.map((p, k) => `${k ? "L" : "M"}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join("");
+  const plan = B.map((b, i) => [i, b.cum_planned_k]);
+  const act = B.map((b, i) => [i, b.cum_actual_k]).filter(p => p[1] !== "");
+  const lastA = act.length - 1;
+  const fc = [[lastA, act[lastA][1]]].concat(B.map((b, i) => [i, b.cum_forecast_k]).filter(p => p[0] > lastA));
+  g += `<line x1="${L}" x2="${W - R}" y1="${y(evm.bac_k)}" y2="${y(evm.bac_k)}" stroke="var(--muted)" stroke-dasharray="2 3"/>`;
+  g += `<path d="${path(plan)}" fill="none" stroke="var(--s1)" stroke-width="2"/>`;
+  g += `<path d="${path(act)}" fill="none" stroke="var(--s2)" stroke-width="2"/>`;
+  g += `<path d="${path(fc)}" fill="none" stroke="var(--s2)" stroke-width="2" stroke-dasharray="5 4"/>`;
+  g += `<circle cx="${x(lastA)}" cy="${y(act[lastA][1])}" r="4" fill="var(--s2)" stroke="var(--surface)" stroke-width="2"/>`;
+  const ends = [{ t: `EAC ${money(evm.eac_k)}`, y: y(evm.eac_k) }, { t: `BAC ${money(evm.bac_k)}`, y: y(evm.bac_k) }];
+  if (ends[1].y - ends[0].y < 13) ends[1].y = ends[0].y + 13;
+  ends.forEach(e => g += `<text x="${W - R + 6}" y="${e.y + 4}" style="fill:var(--ink-2)">${e.t}</text>`);
+  g += `<line id="cx" y1="${T}" y2="${H - Bm}" stroke="var(--axis)" visibility="hidden"/><rect id="ch" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - Bm}" fill="transparent"/>`;
+  host.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Cumulative cost, planned versus actual and forecast">${g}</svg>`;
+  const svg = host.querySelector("svg"), t = tip(panel), cx = svg.querySelector("#cx");
+  svg.querySelector("#ch").addEventListener("pointermove", ev => {
+    const r = svg.getBoundingClientRect(); const i = Math.max(0, Math.min(B.length - 1, Math.round((ev.clientX - r.left - L) / ((W - L - R) / (B.length - 1)))));
+    cx.setAttribute("x1", x(i)); cx.setAttribute("x2", x(i)); cx.setAttribute("visibility", "visible");
+    const b = B[i];
+    t.innerHTML = `<b>${D(b.month + "-15").toLocaleDateString("en-US", { month: "long", year: "numeric" })}</b><div class="row"><span>Planned to date</span><b>$${b.cum_planned_k}K</b></div>` + (b.cum_actual_k !== "" ? `<div class="row"><span>Actual to date</span><b>$${b.cum_actual_k}K</b></div><div class="row"><span>Variance</span><b>${b.cum_actual_k - b.cum_planned_k >= 0 ? "+" : ""}$${b.cum_actual_k - b.cum_planned_k}K</b></div>` : `<div class="row"><span>Forecast to date</span><b>$${b.cum_forecast_k}K</b></div>`);
+    place(t, panel, ev);
+  });
+  svg.querySelector("#ch").addEventListener("pointerleave", () => { t.hidden = true; cx.setAttribute("visibility", "hidden"); });
+}
+
+function heatLevel(score) { return score >= 15 ? 4 : score >= 12 ? 3 : score >= 8 ? 2 : score >= 4 ? 1 : 0; }
+function renderHeat() {
+  let h = "";
+  for (let p = 5; p >= 1; p--) {
+    h += `<div class="ax">${p}</div>`;
+    for (let i = 1; i <= 5; i++) {
+      const rs = openRisks.filter(r => r.probability === p && r.impact === i);
+      h += `<div class="cell" style="background:var(--heat-${heatLevel(p * i)})" aria-label="Probability ${p}, impact ${i}: ${rs.length} risks">${rs.map(r => `<b title="${r.title}">${r.id}</b>`).join("")}</div>`;
+    }
+  }
+  h += `<div></div>` + [1, 2, 3, 4, 5].map(i => `<div class="ax">${i}</div>`).join("");
+  document.getElementById("heat").innerHTML = h;
+}
+
+const STAT = { Open: "amber", Closed: "neutral", Resolved: "good", Validated: "good", Complete: "good", "On track": "good" };
+function renderRaid() {
+  const types = ["All", "Risk", "Assumption", "Issue", "Dependency"];
+  document.getElementById("raidChips").innerHTML = types.map(t => `<button type="button" class="chip" data-t="${t}" aria-pressed="${state.raidType === t}">${t === "All" ? "All" : t === "Dependency" ? "Dependencies" : t + "s"} <span style="opacity:.7">${t === "All" ? DATA.raid.length : DATA.raid.filter(r => r.type === t).length}</span></button>`).join("");
+  const rows = DATA.raid.filter(r => state.raidType === "All" || r.type === state.raidType)
+    .sort((a, b) => (b.status === "Open") - (a.status === "Open") || (b.probability * b.impact || b.impact) - (a.probability * a.impact || a.impact));
+  document.getElementById("raid").innerHTML = `<thead><tr><th class="mono">ID</th><th>Item and next action</th><th>Workstream</th><th>Owner</th><th class="mono">P×I</th><th>Status</th><th class="mono">Due</th></tr></thead><tbody>` +
+    rows.map(r => {
+      const sc = r.probability * r.impact;
+      const scoreCell = r.type === "Risk" ? `<span class="score" style="background:var(--heat-${heatLevel(sc)})">${sc}</span>` : r.type === "Issue" ? `<span style="color:var(--muted)">Impact ${r.impact}</span>` : `<span style="color:var(--muted)">n/a</span>`;
+      const overdue = r.status === "Open" && D(r.due) < STATUS;
+      return `<tr><td class="mono">${r.id}</td><td class="title">${r.title}${r.mitigation ? `<div class="mit">${r.mitigation}</div>` : ""}</td><td>${r.workstream}</td><td>${r.owner}</td><td class="mono">${scoreCell}</td><td><span class="pill ${overdue ? "red" : STAT[r.status] || "neutral"}">${overdue ? "Overdue" : r.status}</span></td><td class="mono">${D(r.due).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</td></tr>`;
+    }).join("") + `</tbody>`;
+}
+
+function render() {
+  document.getElementById("wsSel").value = state.ws;
+  renderGantt(); renderRaid();
+  try { localStorage.setItem("beacon-filters", JSON.stringify(state)); } catch (e) {}
+}
+const wsSel = document.getElementById("wsSel");
+[...new Set(ms.map(m => m.workstream))].forEach(w => wsSel.insertAdjacentHTML("beforeend", `<option value="${w}">${w}</option>`));
+wsSel.addEventListener("change", e => { state.ws = e.target.value; render(); });
+document.getElementById("raidChips").addEventListener("click", e => { const b = e.target.closest(".chip"); if (!b) return; state.raidType = b.dataset.t; render(); });
+renderHeader(); renderCost(); renderHeat(); render();
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => { renderGantt(); renderCost(); }, 150); });
+</script>

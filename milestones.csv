@@ -1,0 +1,12 @@
+id,workstream,milestone,planned_start,planned_finish,forecast_finish,pct_complete,critical_path,depends_on
+M01,Governance,Program charter and steering committee approved,2026-01-05,2026-01-30,2026-01-30,100,True,
+M02,Requirements,Clinical workflow requirements signed off,2026-02-02,2026-03-20,2026-03-27,100,True,M01
+M03,Integration,EHR interface build (HL7/FHIR),2026-03-23,2026-06-12,2026-06-26,100,True,M02
+M04,Data,Historical note migration and reconciliation,2026-04-06,2026-07-31,2026-08-14,100,False,M02
+M05,Security,HIPAA risk assessment and access controls,2026-04-20,2026-06-30,2026-06-30,100,False,M02
+M06,Testing,System and integration testing,2026-06-15,2026-08-28,2026-09-18,100,True,M03
+M07,Testing,User acceptance testing (3 pilot sites),2026-08-31,2026-10-09,2026-10-30,90,True,M06
+M08,Training,Super-user and provider training,2026-09-14,2026-11-13,2026-11-20,60,False,M07
+M09,Deployment,Wave 1 go-live (4 hospitals),2026-11-16,2026-11-20,2026-12-04,0,True,M07
+M10,Deployment,Wave 2 go-live (6 hospitals),2027-01-11,2027-01-22,2027-02-05,0,True,M09
+M11,Adoption,Hypercare and adoption tracking,2026-11-23,2027-03-12,2027-03-26,0,False,M09
